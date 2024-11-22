@@ -1,15 +1,28 @@
-from typing import Union
+from fastapi import FastAPI, status
 
-from fastapi import FastAPI
+from geo_distance.config.database import Base, Session, engine
+from geo_distance.models import Position as PositionModel
+from geo_distance.schemas import Position
 
 app = FastAPI()
 
+Base.metadata.create_all(bind=engine)
+
 
 @app.get("/")
-def read_root():
-    return {"Hello": "World"}
+def inicio():
+    return "Welcome to GeoDistance App"
 
 
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
+@app.post(
+    "/positions/",
+    status_code=status.HTTP_201_CREATED,
+    response_model=Position,
+    summary="This endpoint allows the creation of positions",
+)
+def post_position(position: Position):
+    db = Session()
+    new_position = PositionModel(**position.dict())
+    db.add(new_position)
+    db.commit()
+    return position.dict()
